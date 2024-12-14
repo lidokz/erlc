@@ -1,14 +1,18 @@
-local Players = game:GetService("Players")
+Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Camera = workspace.CurrentCamera
 
+-- Função para criar ESP com Highlight e nomes
 local function createESP(player)
+    -- Verificar se o jogador tem um personagem válido
     local function applyHighlight()
         if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            -- Remover highlights antigos (se existirem)
             if player.Character:FindFirstChild("Highlight") then
                 player.Character.Highlight:Destroy()
             end
 
+            -- Criar um novo Highlight
             local highlight = Instance.new("Highlight")
             highlight.Name = "Highlight"
             highlight.Adornee = player.Character
@@ -20,6 +24,7 @@ local function createESP(player)
         end
     end
 
+    -- Função para exibir o nome e o time
     local function createNameTags()
         local nameTag = Drawing.new("Text")
         local teamTag = Drawing.new("Text")
@@ -28,16 +33,17 @@ local function createESP(player)
         nameTag.Size = 16
         nameTag.Center = true
         nameTag.Outline = true
-        nameTag.Color = Color3.new(1, 1, 1)
+        nameTag.Color = Color3.new(1, 1, 1) -- Nome do jogador em branco
         nameTag.Transparency = 1
 
         teamTag.Text = player.Team and player.Team.Name or "No Team"
         teamTag.Size = 14
         teamTag.Center = true
         teamTag.Outline = true
-        teamTag.Color = player.Team and player.Team.TeamColor.Color or Color3.new(1, 1, 1)
+        teamTag.Color = player.Team and player.Team.TeamColor.Color or Color3.new(1, 1, 1) -- Nome do time colorido
         teamTag.Transparency = 1
 
+        -- Atualizar as posições
         RunService.RenderStepped:Connect(function()
             if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
                 local humanoidRootPart = player.Character.HumanoidRootPart
@@ -46,8 +52,8 @@ local function createESP(player)
                 if onScreen then
                     nameTag.Visible = true
                     teamTag.Visible = true
-                    nameTag.Position = Vector2.new(screenPos.X, screenPos.Y - 15)
-                    teamTag.Position = Vector2.new(screenPos.X, screenPos.Y - 30)
+                    nameTag.Position = Vector2.new(screenPos.X, screenPos.Y - 15) -- Nome do jogador acima
+                    teamTag.Position = Vector2.new(screenPos.X, screenPos.Y - 30) -- Nome do time acima do nome
                 else
                     nameTag.Visible = false
                     teamTag.Visible = false
@@ -59,88 +65,27 @@ local function createESP(player)
         end)
     end
 
+    -- Aplicar Highlight e nomes
     applyHighlight()
     createNameTags()
 
+    -- Atualizar ao mudar o personagem
     player.CharacterAdded:Connect(function()
         applyHighlight()
         createNameTags()
     end)
 end
 
-local function aimbot()
-    local closestTarget = nil
-    local closestDistance = _G.fov
-
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= Players.LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            local targetPosition = player.Character.HumanoidRootPart.Position
-            local screenPos, onScreen = Camera:WorldToViewportPoint(targetPosition)
-            local distance = (Camera.CFrame.Position - targetPosition).Magnitude
-
-            if onScreen and distance < closestDistance then
-                closestDistance = distance
-                closestTarget = player
-            end
-        end
-    end
-
-    if closestTarget then
-        local targetPosition = closestTarget.Character.HumanoidRootPart.Position
-        Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPosition)
-    end
-end
-
-game:GetService("UserInputService").InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    if input.KeyCode == Enum.KeyCode[_G.aimbotKey] then
-        _G.aimbotEnabled = not _G.aimbotEnabled
-        print(_G.aimbotEnabled and "Aimbot Ativado" or "Aimbot Desativado")
-    end
-end)
-
-local function toggleESP()
-    if _G.espEnabled then
-        _G.espEnabled = false
-        print("ESP Desativado")
-        for _, player in pairs(Players:GetPlayers()) do
-            if player ~= Players.LocalPlayer then
-                if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                    local rootPart = player.Character:FindFirstChild("HumanoidRootPart")
-                    if rootPart:FindFirstChild("Highlight") then
-                        rootPart.Highlight:Destroy()
-                    end
-                    if player.Character:FindFirstChild("NameTag") then
-                        player.Character.NameTag:Destroy()
-                    end
-                end
-            end
-        end
-    else
-        _G.espEnabled = true
-        print("ESP Ativado")
-        for _, player in pairs(Players:GetPlayers()) do
-            if player ~= Players.LocalPlayer then
-                createESP(player)
-            end
-        end
-    end
-end
-
+-- Adicionar ESP para todos os jogadores existentes
 for _, player in pairs(Players:GetPlayers()) do
     if player ~= Players.LocalPlayer then
         createESP(player)
     end
 end
 
+-- Adicionar ESP para novos jogadores
 Players.PlayerAdded:Connect(function(player)
     if player ~= Players.LocalPlayer then
         createESP(player)
-    end
-end)
-
-RunService.RenderStepped:Connect(function()
-    if _G.aimbotEnabled then
-        aimbot()
     end
 end)
